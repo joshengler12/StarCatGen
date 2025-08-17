@@ -1,0 +1,42 @@
+{
+  "name": "electron-app",
+  "version": "1.0.6",
+  "description": "My test electron app",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "watch": "nodemon --exec electron .",
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "repository": "https://github.com/joshengler12/my-first-electron-app",
+  "publish": {
+    "provider": "github",
+    "releaseType": "release"
+  },
+  "build": {
+    "appId": "com.coderjeet.autoupdater",
+    "productName": "StarCatGen",
+    "artifactName": "${productName}-Setup-${version}.${ext}",
+    "win": {
+      "target": "nsis"
+    },
+    "directories": {
+      "output": "dist"
+    }
+  },
+  "author": "CoderJeet",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^19.0.9",
+    "electron-builder": "^23.6.0",
+    "nodemon": "^2.0.19"
+  },
+  "dependencies": {
+    "electron-updater": "^5.3.0",
+    "papaparse": "^5.5.3",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "three": "^0.178.0"
+  }
+}

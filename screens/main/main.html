@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>StarCatGen</title>
+
+  <!-- GoldenLayout v1 (must load jQuery first) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js?v=force"></script>
+  <script src="https://unpkg.com/golden-layout@1.5.9/dist/goldenlayout.js?v=force"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/golden-layout@1.5.9/src/css/goldenlayout-base.css">
+  <link rel="stylesheet" href="../../assets/goldenlayout-dark-theme.css">
+
+  <!-- CSV parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <!-- CSS link -->
+  <link href="./main.css" rel="stylesheet">
+
+  <!-- Import map (used inside the iframes too) -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.161/build/three.module.js",
+        "jsm/":  "https://cdn.jsdelivr.net/npm/three@0.161/examples/jsm/"
+      }
+    }
+  </script>
+
+  <!-- renderer modules -->
+  <script type="module" src="./mainView.js"></script>
+  <script type="module" src="./features/importStar/starImport.js"></script>
+  <script type="module" src="./features/importOrbit/importOrbitView.js"></script>
+  <script type="module" src="./features/optimize/optimizeView.js"></script>
+  <script type="module" src="./features/simulate/simulateView.js"></script>
+</head>
+
+<body>
+  <div class="titlebar">
+    <div class="left-controls" style="display:flex; gap:16px; align-items:center;">
+      <div class="title">StarCatGen</div>
+
+      <!-- 1) Import Stars -->
+      <div class="dropdown" id="starsDropdown">
+        <button class="menu-btn" type="button">1. Import Stars ▾</button>
+        <div class="content">
+          <button id="importstarsBtn" style="margin-top:0px;">Import Star Catalog</button>
+          <span id="importFileName" style="margin-left:8px; opacity:.8; color:#ccc;">No file chosen</span>
+          <input id="csvInput" type="file" accept=".csv" style="display:none;">
+          <div id="importOrbitPanel" style="color:#ddd; width: 360px;">
+            <div style="margin:5px 0;">
+              <label style="margin-right:10px;">Right Ascension (degrees):</label>
+              <select id="raSelect"></select>
+            </div>
+            <div style="margin:5px 0;">
+             <label style="margin-right:10px;">Declination (degrees):</label>
+             <select id="decSelect"></select>
+            </div>
+            <div style="margin:5px 0;">
+             <label style="margin-right:10px;">Visual Magnitude: (Johnson V):</label>
+             <select id="vmagSelect"></select>
+           </div>
+           <div style="margin:5px 0;">
+             <label style="margin-right:10px;">Parallax (milliarcseconds):</label>
+             <select id="plxSelect"></select>
+           </div>
+            <button id="generateStarsBtn" style="margin-top:10px;">Generate Stars</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2) Import Orbit -->
+      <div class="dropdown" id="orbitDropdown">
+        <button class="menu-btn" type="button">2. Import Orbit ▾</button>
+        <div class="content">
+          <div id="importOrbitPanel" style="color:#ddd; width: 360px;">
+            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+              <label>Eccentricity (0-1):</label>
+              <input id="Eccentricity" type="number" step="0.001" value="0" style="width:100px;">
+            </div>
+            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+              <label>Semimajor axis (km):</label>
+              <input id="SemimajorAxis" type="number" step="500" value="10000" style="width:100px;">
+            </div>
+            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+              <label>Inclination (deg):</label>
+              <input id="Inclination" type="number" step="1" value="0" style="width:100px;">
+            </div> 
+            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+              <label>Longitude of ascending node (deg):</label>
+              <input id="LongOfAN" type="number" step="1" value="0" style="width:100px;">
+            </div>  
+            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+              <label>Argument of periapsis (deg):</label>
+              <input id="ArgOfP" type="number" step="1" value="0" style="width:100px;">
+            </div>
+            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+              <label>Mean anomaly at epoch (deg):</label>
+              <input id="MeanAtEpoch" type="number" step="1" value="0" style="width:100px;">
+            </div>
+            <div style="margin-top:8px; display:flex; gap:8px; align-items:center;">
+              <button id="btnApplyOrbit" type="button">Apply</button>
+              <span id="derivedText" style="opacity:.8;"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3) Define Camera -->
+      <div class="dropdown" id="cameraDropdown">
+        <button class="menu-btn" type="button">3. Define Camera ▾</button>
+        <div class="content">
+          <div id="cameraPanel" style="color:#ddd; width:300px;">
+            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+              <label>Focal (mm)</label>
+              <input id="cam_focal" type="number" step="1" value="35">
+            </div>
+            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+              <label>Sensor W (mm) </label>
+              <input id="cam_sw" type="number" step="0.1" value="36">
+            </div>
+            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+              <label>Sensor H (mm)</label> 
+              <input id="cam_sh" type="number" step="0.1" value="24">
+            </div>
+            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+              <label>Width (px) </label>
+              <input id="cam_w" type="number" step="1" value="1280">
+            </div>  
+            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+              <label>Height (px) </label>
+              <input id="cam_h" type="number" step="1" value="720">
+            </div> 
+            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+              <label>f-number</label> 
+              <input id="cam_fnum" type="number" step="0.1" value="2.8">
+            </div> 
+            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+              <label>ISO</label> 
+              <input id="cam_iso" type="number" step="100" value="400">
+            </div> 
+            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+              <label>Shutter (s)</label>
+              <input id="cam_shutter" type="number" step="0.001" value="0.0167">
+            </div> 
+            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+              <label>Bloom (0–2)</label>
+              <input id="cam_bloom" type="number" step="0.05" value="0.6">
+            </div> 
+            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+              <label>Vignette (0–1)</label>
+              <input id="cam_vignette" type="number" step="0.05" value="0.25">
+            </div>
+            <div style="margin-top:8px; display:flex; gap:8px; align-items:center;">
+              <button id="cam_apply" type="button">Apply</button>
+              <button id="cam_reset" type="button">Reset</button>
+              <span id="cam_hint" style="opacity:.8;"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- 4) Define Optimize Button -->
+      <div class="dropdown" id="optDropdown">
+        <button class="menu-btn" type="button">4. Optimize Catalog ▾</button>
+        <div class="content">
+          <div style="color:#ddd; width:300px;">
+            <label>Top N brightest <input id="pair_topN" type="number" min="100" step="100" value="5000"></label>
+            <label>Max separation (deg) <input id="pair_maxSep" type="number" min="1" step="1" value="40"></label>
+            <div style="margin-top:8px; display:flex; gap:8px; align-items:center;">
+              <button id="opt_buildPairs" type="button">Build Pair Index</button>
+              <span id="pair_status" style="opacity:.8;"></span>
+            </div>
+            <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">
+              <div id="opt_progress" style="width:220px; height:8px; background:#333; border:1px solid #555;">
+                <div id="opt_bar" style="height:100%; width:0%; background:#4caf50;"></div>
+              </div>
+              <span id="pair_status" style="font-size:12px; color:#ccc;">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- 5) Define Simulate Button -->
+      <div class="dropdown" id="simDropdown">
+        <button class="menu-btn" type="button">5. Simulate ▾</button>
+        <div class="content" style="width:320px; color:#ddd;">
+          <div style="display:flex; gap:10px; align-items:center;">
+            <label style="width:80px;">Anomaly</label>
+            <input id="sim_nu" type="range" min="0" max="360" step="0.1" value="0" style="flex:1;">
+            <span id="sim_nu_val" style="width:48px; text-align:right;">0°</span>
+          </div>
+
+          <div style="display:flex; gap:10px; align-items:center; margin-top:8px;">
+            <label style="width:80px;">Dir</label>
+            <select id="cam_dir" style="flex:1;">
+              <option value="out">Outward (+r)</option>
+              <option value="in">Inward (nadir −r)</option>
+              <option value="fwd">Forward (+v)</option>
+              <option value="back">Backward (−v)</option>
+              <option value="norm">Normal (+h)</option>
+              <option value="antinorm">Anti-normal (−h)</option>
+            </select>
+          </div>
+
+          <div style="display:flex; gap:10px; align-items:center; margin-top:8px;">
+            <button id="sim_play"  type="button">▶︎ Play</button>
+            <button id="sim_pause" type="button">⏸ Pause</button>
+            <label>speed (°/s) <input id="sim_rate" type="number" step="1" value="10" style="width:70px;"></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="window-controls" style="-webkit-app-region:no-drag;">
+      <button class="min-btn">—</button>
+      <button class="max-btn">□</button>
+      <button class="close-btn">✕</button>
+    </div>
+  </div>
+
+  <div id="layoutContainer"></div>
+  <div id="footer"><div id="message" style="color: limegreen">Status message...</div></div>
+
+  <script>
+    // emit simple events that mainView.js will catch
+    
+    // build iframe URLs robustly
+    const base = new URL('.', location.href);
+    const globeUrl  = new URL('./panels/earth/globeView.html', base).toString();
+    const cameraUrl = new URL('./panels/camera/cameraView.html', base).toString();
+
+    // GoldenLayout config (no need for componentState.src since we set it in registerComponent)
+    const config = {
+      content: [{
+        type: 'row',
+        content: [
+          { type: 'component', componentName: 'EarthRender'  },
+          { type: 'component', componentName: 'CameraView'   }
+        ]
+      }]
+    };
+
+    // set up golden
+    const myLayout = new GoldenLayout(config, $('#layoutContainer'));
+
+    myLayout.registerComponent('EarthRender', function (container, state) {
+      container.getElement().html(`<iframe id="earthFrame" src="${globeUrl}"></iframe>`);
+    });
+
+    myLayout.registerComponent('CameraView', function (container, state) {
+      container.getElement().html(`<iframe id="cameraFrame" src="${cameraUrl}"></iframe>`);
+    });
+
+    myLayout.init();
+    addEventListener('resize', () => myLayout.updateSize());
+
+    // window buttons + dropdowns
+    addEventListener('DOMContentLoaded', () => {
+      document.querySelector('.min-btn')?.addEventListener('click', () => window.electron?.controlWindow('minimize'));
+      document.querySelector('.max-btn')?.addEventListener('click', () => window.electron?.controlWindow('maximize'));
+      document.querySelector('.close-btn')?.addEventListener('click', () => window.electron?.controlWindow('close'));
+
+      document.querySelectorAll('.dropdown > button').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const dd = e.currentTarget.parentElement;
+          document.querySelectorAll('.dropdown').forEach(d => { if (d !== dd) d.classList.remove('show'); });
+          dd.classList.toggle('show');
+        });
+      });
+      document.addEventListener('click', (e) => {
+        document.querySelectorAll('.dropdown').forEach(d => { if (!d.contains(e.target)) d.classList.remove('show'); });
+      });
+    });
+  </script>
+</body>
+</html>
